@@ -49,6 +49,7 @@ class Connection:
             if connection.connectionType != self.connectionType and self.connected == False:
                 self.connectedTo.append(connection)
                 self.connected = True
+                self.gate.calculateOutput()
         else:
             if connection.connectionType != self.connectionType and connection.connected == False:
                 self.connectedTo.append(connection)
@@ -63,7 +64,6 @@ class Connection:
             self.connectedTo.remove(connection)
             if len(self.connectedTo) == 0:
                 self.connected = False
-
     def draw(self):
         pygame.draw.ellipse(window,"white",self.connectionRect)
         pygame.draw.ellipse(window,"black",self.connectionRect,2)
@@ -92,6 +92,10 @@ class LogicGate:
     def sendOutput(self):
         for c in self.output.connectedTo:
             c.gate.calculateOutput()
+    def delete(self):
+        for c in self.connections:
+            if c.connected:
+                c.disconnect(None)
 
 #Child classes
 class AndGate(LogicGate):
@@ -102,11 +106,12 @@ class AndGate(LogicGate):
         self.inputs = [Connection(0,pygame.Rect(self.gateRect.x-18,self.gateRect.y+22,18,18),self),Connection(0,pygame.Rect(self.gateRect.x-18,self.gateRect.y+61,18,18),self)]
         self.connections = [self.inputs[0],self.inputs[1], self.output]
     def calculateOutput(self):
-        if self.inputs[0].connectedTo[0].gate.value == 1 and self.inputs[1].connectedTo[0].gate.value == 1:
-            self.value = 1
-        else:
-            self.value = 0
-        self.sendOutput()
+        if self.inputs[0].connected and self.inputs[1].connected:
+            if self.inputs[0].connectedTo[0].gate.value == 1 and self.inputs[1].connectedTo[0].gate.value == 1:
+                self.value = 1
+            else:
+                self.value = 0
+            self.sendOutput()
 class NAndGate(LogicGate):
     def __init__(self,x,y):
         LogicGate.__init__(self,x,y, nandImg)
@@ -115,11 +120,12 @@ class NAndGate(LogicGate):
         self.inputs = [Connection(0,pygame.Rect(self.gateRect.x-18,self.gateRect.y+22,18,18),self),Connection(0,pygame.Rect(self.gateRect.x-18,self.gateRect.y+61,18,18),self)]
         self.connections = [self.inputs[0],self.inputs[1], self.output]
     def calculateOutput(self):
-        if self.inputs[0].connectedTo[0].gate.value == 1 and self.inputs[1].connectedTo[0].gate.value == 1:
-            self.value = 0
-        else:
-            self.value = 1
-        self.sendOutput()
+        if self.inputs[0].connected and self.inputs[1].connected:
+            if self.inputs[0].connectedTo[0].gate.value == 1 and self.inputs[1].connectedTo[0].gate.value == 1:
+                self.value = 0
+            else:
+                self.value = 1
+            self.sendOutput()
 class OrGate(LogicGate):
     def __init__(self,x,y):
         LogicGate.__init__(self,x,y, orImg)
@@ -128,11 +134,12 @@ class OrGate(LogicGate):
         self.inputs = [Connection(0,pygame.Rect(self.gateRect.x-18,self.gateRect.y+22,18,18),self),Connection(0,pygame.Rect(self.gateRect.x-18,self.gateRect.y+61,18,18),self)]
         self.connections = [self.inputs[0],self.inputs[1], self.output]
     def calculateOutput(self):
-        if self.inputs[0].connectedTo[0].gate.value == 1 or self.inputs[1].connectedTo[0].gate.value == 1:
-            self.value = 1
-        else:
-            self.value = 0
-        self.sendOutput()
+        if self.inputs[0].connected and self.inputs[1].connected:
+            if self.inputs[0].connectedTo[0].gate.value == 1 or self.inputs[1].connectedTo[0].gate.value == 1:
+                self.value = 1
+            else:
+                self.value = 0
+            self.sendOutput()
 class NOrGate(LogicGate):
     def __init__(self,x,y):
         LogicGate.__init__(self,x,y, norImg)
@@ -141,11 +148,12 @@ class NOrGate(LogicGate):
         self.inputs = [Connection(0,pygame.Rect(self.gateRect.x-18,self.gateRect.y+22,18,18),self),Connection(0,pygame.Rect(self.gateRect.x-18,self.gateRect.y+61,18,18),self)]
         self.connections = [self.inputs[0],self.inputs[1], self.output]
     def calculateOutput(self):
-        if self.inputs[0].connectedTo[0].gate.value == 1 or self.inputs[1].connectedTo[0].gate.value == 1:
-            self.value = 0
-        else:
-            self.value = 1
-        self.sendOutput()
+        if self.inputs[0].connected and self.inputs[1].connected:
+            if self.inputs[0].connectedTo[0].gate.value == 1 or self.inputs[1].connectedTo[0].gate.value == 1:
+                self.value = 0
+            else:
+                self.value = 1
+            self.sendOutput()
 class XOrGate(LogicGate):
     def __init__(self,x,y):
         LogicGate.__init__(self,x,y, xorImg)
@@ -154,11 +162,12 @@ class XOrGate(LogicGate):
         self.inputs = [Connection(0,pygame.Rect(self.gateRect.x-18,self.gateRect.y+22,18,18),self),Connection(0,pygame.Rect(self.gateRect.x-18,self.gateRect.y+61,18,18),self)]
         self.connections = [self.inputs[0],self.inputs[1], self.output]
     def calculateOutput(self):
-        if self.inputs[0].connectedTo[0].gate.value == self.inputs[1].connectedTo[0].gate.value:
-            self.value = 0
-        else:
-            self.value = 1
-        self.sendOutput()
+        if self.inputs[0].connected and self.inputs[1].connected:
+            if self.inputs[0].connectedTo[0].gate.value == self.inputs[1].connectedTo[0].gate.value:
+                self.value = 0
+            else:
+                self.value = 1
+            self.sendOutput()
 #Input class
 class InputGate(LogicGate):
     def __init__(self,x,y):
@@ -304,6 +313,7 @@ while running:
             #Deleting a gate
             if keys[pygame.K_BACKSPACE]:
                 if prevActiveGate != None:
+                    gates[prevActiveGate].delete()
                     gates.pop(prevActiveGate)
                     prevActiveGate = None
     #Drawing the gates
