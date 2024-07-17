@@ -236,38 +236,84 @@ class OutputGate(LogicGate):
             connection.draw()
     def calculateOutput(self, sentGate):
         self.value = self.inputs[0].connectedTo[0].gate.value
-        
 
+#Sidebar gates
+class SidebarGates:
+    def __init__(self,x,y,img,type):
+        self.img = img
+        self.type = type
+        self.gateRect = img.get_rect()
+        self.gateRect.x = x
+        self.gateRect.y = y
+    def draw(self):
+        window.blit(self.img, self.gateRect)
+
+#Class for buttons
+class Button:
+    def __init__(self,text,x,y,function):
+        self.text = text
+        self.x = x
+        self.y = y
+        self.function = function
+        self.xsize = 100
+        self.ysize = 50
+        self.color = (220, 95, 0)
+        self.textColor = (0,0,0)
+    def clicked(self):
+        x = pygame.mouse.get_pos()[0]
+        y = pygame.mouse.get_pos()[1]
+        if x>self.x and x<self.x+self.xsize and y>self.y and y<self.y+self.ysize:
+            self.function(self)
+    def draw(self):
+        pygame.draw.rect(window, self.color, (self.x,self.y,self.xsize,self.ysize),border_radius=10)
+        DrawText(self.text, 17,self.textColor,(self.x+self.xsize/2),(self.y+self.ysize/2))
 
 #--------------HELPER FUNCTIONS--------------#
 def AddGate(gateType):
+    x,y = pygame.mouse.get_pos()
+    x -= 67.5
+    y -= 50
     match gateType:
         case "and":
-            gates.append(AndGate(*pygame.mouse.get_pos()))
+            gates.append(AndGate(x,y))
         case "nand":
-            gates.append(NAndGate(*pygame.mouse.get_pos()))
+            gates.append(NAndGate(x,y))
         case "or":
-            gates.append(OrGate(*pygame.mouse.get_pos()))
+            gates.append(OrGate(x,y))
         case "nor":
-            gates.append(NOrGate(*pygame.mouse.get_pos()))
+            gates.append(NOrGate(x,y))
         case "xor":
-            gates.append(XOrGate(*pygame.mouse.get_pos()))
+            gates.append(XOrGate(x,y))
         case "nxor":
-            gates.append(NXOrGate(*pygame.mouse.get_pos()))
+            gates.append(NXOrGate(x,y))
         case "not":
-            gates.append(NotGate(*pygame.mouse.get_pos()))
+            gates.append(NotGate(x,y))
         case "input":
-            gates.append(InputGate(*pygame.mouse.get_pos()))
+            gates.append(InputGate(x,y))
         case "output":
-            gates.append(OutputGate(*pygame.mouse.get_pos()))
+            gates.append(OutputGate(x,y))
 
-def GetActiveGate(pos):
+def GetActiveGate1(pos):
     global activeGate
     global prevActiveGate
     for num, gate in enumerate(gates):
-                    if gate.gateRect.collidepoint(pos):
-                        activeGate = num
-                        prevActiveGate = activeGate
+        if gate.gateRect.collidepoint(pos):
+            activeGate = num
+            prevActiveGate = activeGate
+
+def AddSideGate(pos):
+    global activeGate
+    global prevActiveGate
+    global sideBarMode
+    if sideBarMode == "GATES":
+        g = sideGates
+    else:
+        g = sideIO
+    for gate in g:
+        if gate.gateRect.collidepoint(pos):
+            activeGate = len(gates)
+            prevActiveGate = activeGate
+            AddGate(gate.type)
 
 def DrawText(text, size, color, x, y):
     font = pygame.font.Font('freesansbold.ttf', size)
@@ -275,16 +321,32 @@ def DrawText(text, size, color, x, y):
     textRect = text.get_rect()
     textRect.center = (x, y)
     window.blit(text, textRect)
+
+def SwitchBarMode(btn):
+    global sideBarMode
+    sideBarMode = btn.text
+
+def Clear(btn):
+    global gates
+    gates = []
+    global prevActiveGate
+    prevActiveGate = None
 #--------------MAIN LOOP--------------#
 running = True
 gates = []
+sideGates = [SidebarGates(5,100,andImg,"and"),SidebarGates(160,100,nandImg,"nand"),SidebarGates(5,220,orImg,"or"),SidebarGates(160,220,norImg,"nor"),SidebarGates(5,330,xorImg,"xor"),SidebarGates(160,330,nxorImg,"nxor"),SidebarGates(82.5,440,notImg,"not")]
+sideIO = [SidebarGates(5,100,inputImg,"input"),SidebarGates(160,100,outputImg,"output")]
 activeGate = None
 prevActiveGate = None
 motion = False
 activeConnection1 = None
 activeConnection2 = None
+sideBarMode = "GATES"
+GateBtn = Button("GATES",30,10,SwitchBarMode)
+IOBtn = Button("I/O",170,10,SwitchBarMode)
+ClearBtn = Button("CLEAR",10,650,Clear)
 while running:
-    window.fill("grey")
+    window.fill((104, 109, 118))
     #Getting all events
     for event in pygame.event.get():
         #Checking if window gets closed
@@ -297,17 +359,25 @@ while running:
                             activeConnection1 = connection
             #ON LEFT CLICK
             if event.button == 1:
-                GetActiveGate(event.pos)
+                if event.pos[0] > 300:
+                    GetActiveGate1(event.pos)
+                else:
+                    AddSideGate(event.pos)
+                    GateBtn.clicked()
+                    IOBtn.clicked()
+                    ClearBtn.clicked()
             #ON RIGHT CLICK
             if event.button == 3 and activeConnection1 != None:
                 activeConnection1.disconnect(None)
                 activeConnection1 = None
         if event.type == pygame.MOUSEMOTION:
+            #Move gate
             if activeGate != None:
                 nextPos = (gates[activeGate].gateRect.move(event.rel).x,gates[activeGate].gateRect.move(event.rel).y)
-                if  nextPos[0] < 1145 and nextPos[0] > 300 and nextPos[1] > 0 and nextPos[1] < 620:
+                if  nextPos[0] < 1145 and nextPos[0] > 0 and nextPos[1] > 0 and nextPos[1] < 620:
                     gates[activeGate].move(event.rel)
                     motion = True
+            #Move camera
             elif event.buttons == (1,0,0) and activeConnection1 == None:
                 dx,dy = event.rel
                 if abs(CamX+dx)<CamXBound and abs(CamY+dy)<CamYBound:
@@ -316,6 +386,7 @@ while running:
                     CamX += dx
                     CamY += dy
         if event.type == pygame.MOUSEBUTTONUP:
+            #Change input value
             if activeGate != None and motion == False:
                 if gates[activeGate].type == "input":
                     gates[activeGate].changeValue()
@@ -367,7 +438,16 @@ while running:
     for gate in gates:
         gate.draw()
     #Drawing the side bar
-    pygame.draw.rect(window,"black", (0,0,300,720))  
+    pygame.draw.rect(window,(55, 58, 64), (0,0,300,720))  
+    GateBtn.draw()
+    IOBtn.draw()
+    ClearBtn.draw()
+    if sideBarMode == "GATES":
+        for g in sideGates:
+            g.draw()
+    else:
+        for g in sideIO:
+            g.draw()
     pygame.display.update()
     clock.tick(60)
 pygame.quit()
