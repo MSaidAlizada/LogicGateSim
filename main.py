@@ -18,10 +18,6 @@ CamX = 0
 CamY = 0
 CamXBound = 5000
 CamYBound = 5000
-def getCameraPosition(x,y):
-    return x+640,360-y
-def getWorldPosition(x,y):
-    return x-640,360+y
 
 #Loading the images
 bg = pygame.image.load("./images/bg.png")
@@ -369,23 +365,21 @@ def OpenFile(btn):
     global gates
     global menu
     file = filedialog.askopenfilename(title='Select Logic Gate file', filetypes=[('All Files', '*.*')])
-    print(file)
     if file == '':
         return False
     shelve_file = shelve.open(file[:-3])
     gates = shelve_file['gates']
     menu = False
+    shelve_file.close()
     return True
 
 def Save(btn):
     global gates
     file = filedialog.asksaveasfilename(title='Select Image file', filetypes=[('All Files', '*.*')])
     shelve_file = shelve.open(file)
-    print(gates)
     shelve_file['gates'] = gates
     shelve_file.close()
     shelve_file = shelve.open(file)
-    print(shelve_file['gates'])
     shelve_file.close()
 
 def getImg(type):
