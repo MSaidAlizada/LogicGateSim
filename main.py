@@ -1,11 +1,16 @@
 import pygame
+import tkinter as tk
+import shelve
+from tkinter import filedialog
+root = tk.Tk()
+root.withdraw()
 pygame.init()
 
 #Setting up the window
 windowHeight = 720
 windowWidth = 1280
 window = pygame.display.set_mode((windowWidth,windowHeight))
-pygame.display.set_caption("GATED")
+pygame.display.set_caption("LOGIC GOAT")
 clock = pygame.time.Clock()
 
 #Camera set up
@@ -19,6 +24,14 @@ def getWorldPosition(x,y):
     return x-640,360+y
 
 #Loading the images
+bg = pygame.image.load("./images/bg.png")
+bg.convert()
+clearImg = pygame.image.load("./images/clear.png")
+clearImg.convert()
+saveImg = pygame.image.load("./images/save.png")
+saveImg.convert()
+openImg = pygame.image.load("./images/open.png")
+openImg.convert()
 andImg = pygame.image.load("./images/and.png")
 andImg.convert()
 nandImg = pygame.image.load("./images/nand.png")
@@ -80,13 +93,12 @@ class LogicGate:
     def __init__(self,x,y, img):
         self.value = -1
         self.output = None
-        self.img = img
         self.gateRect = img.get_rect()
         self.gateRect.x = x
         self.gateRect.y = y
         self.connections = []
     def draw(self):
-        window.blit(self.img, self.gateRect)
+        window.blit(getImg(self.type), self.gateRect)
         for connection in self.connections:
             connection.draw()
     def move(self,rel):
@@ -211,7 +223,7 @@ class InputGate(LogicGate):
         self.output = Connection(1,pygame.Rect(self.gateRect.x+135,self.gateRect.y+41,18,18),self)
         self.connections = [self.output]
     def draw(self):
-        window.blit(self.img, self.gateRect)
+        window.blit(getImg(self.type), self.gateRect)
         DrawText(str(self.value),70,(0,0,0),self.gateRect.x+50,self.gateRect.y+50)
         for connection in self.connections:
             connection.draw()
@@ -230,7 +242,7 @@ class OutputGate(LogicGate):
         self.inputs = [Connection(0,pygame.Rect(self.gateRect.x-18,self.gateRect.y+41,18,18),self)]
         self.connections = [self.inputs[0]]
     def draw(self):
-        window.blit(self.img, self.gateRect)
+        window.blit(getImg(self.type), self.gateRect)
         DrawText(str(self.value),70,(0,0,0),self.gateRect.x+85,self.gateRect.y+50)
         for connection in self.connections:
             connection.draw()
@@ -250,13 +262,12 @@ class SidebarGates:
 
 #Class for buttons
 class Button:
-    def __init__(self,text,x,y,function):
-        self.text = text
+    def __init__(self,x,y,w,h,function):
         self.x = x
         self.y = y
         self.function = function
-        self.xsize = 100
-        self.ysize = 50
+        self.xsize = w
+        self.ysize = h
         self.color = (220, 95, 0)
         self.textColor = (0,0,0)
     def clicked(self):
@@ -264,9 +275,29 @@ class Button:
         y = pygame.mouse.get_pos()[1]
         if x>self.x and x<self.x+self.xsize and y>self.y and y<self.y+self.ysize:
             self.function(self)
+    
+
+class TextButton(Button):
+    def __init__(self, text, x, y, w, h, textSize, function):
+        Button.__init__(self, x, y, w, h, function)
+        self.text = text
+        self.textSize = textSize
     def draw(self):
         pygame.draw.rect(window, self.color, (self.x,self.y,self.xsize,self.ysize),border_radius=10)
-        DrawText(self.text, 17,self.textColor,(self.x+self.xsize/2),(self.y+self.ysize/2))
+        pygame.draw.rect(window, "black", (self.x,self.y,self.xsize,self.ysize),3,border_radius=10)
+        DrawText(self.text, self.textSize ,self.textColor,(self.x+self.xsize/2),(self.y+self.ysize/2))
+
+class IconButton(Button):
+    def __init__(self, x, y, w, h, img, function):
+        Button.__init__(self, x, y, w, h, function)
+        self.img = img
+    def draw(self):
+        pygame.draw.rect(window, self.color, (self.x,self.y,self.xsize,self.ysize),border_radius=10)
+        pygame.draw.rect(window, "black", (self.x,self.y,self.xsize,self.ysize),3,border_radius=10)
+        imageRect = self.img.get_rect()
+        imageRect.center = (self.x+self.xsize/2,self.y+self.ysize/2)
+        window.blit(self.img, imageRect)
+
 
 #--------------HELPER FUNCTIONS--------------#
 def AddGate(gateType):
@@ -328,11 +359,59 @@ def SwitchBarMode(btn):
 
 def Clear(btn):
     global gates
-    gates = []
+    global menu
     global prevActiveGate
+    gates = []
     prevActiveGate = None
+    menu = False  
+
+def OpenFile(btn):
+    global gates
+    global menu
+    file = filedialog.askopenfilename(title='Select Logic Gate file', filetypes=[('All Files', '*.*')])
+    print(file)
+    if file == '':
+        return False
+    shelve_file = shelve.open(file[:-3])
+    gates = shelve_file['gates']
+    menu = False
+    return True
+
+def Save(btn):
+    global gates
+    file = filedialog.asksaveasfilename(title='Select Image file', filetypes=[('All Files', '*.*')])
+    shelve_file = shelve.open(file)
+    print(gates)
+    shelve_file['gates'] = gates
+    shelve_file.close()
+    shelve_file = shelve.open(file)
+    print(shelve_file['gates'])
+    shelve_file.close()
+
+def getImg(type):
+    match type:
+        case "and":
+            return andImg
+        case "nand":
+            return nandImg
+        case "or":
+            return orImg
+        case "nor":
+            return norImg
+        case "xor":
+            return xorImg
+        case "nxor":
+            return nxorImg
+        case "not":
+            return notImg
+        case "input":
+            return inputImg
+        case "output":
+            return outputImg
+
 #--------------MAIN LOOP--------------#
 running = True
+menu = True
 gates = []
 sideGates = [SidebarGates(5,100,andImg,"and"),SidebarGates(160,100,nandImg,"nand"),SidebarGates(5,220,orImg,"or"),SidebarGates(160,220,norImg,"nor"),SidebarGates(5,330,xorImg,"xor"),SidebarGates(160,330,nxorImg,"nxor"),SidebarGates(82.5,440,notImg,"not")]
 sideIO = [SidebarGates(5,100,inputImg,"input"),SidebarGates(160,100,outputImg,"output")]
@@ -342,11 +421,15 @@ motion = False
 activeConnection1 = None
 activeConnection2 = None
 sideBarMode = "GATES"
-GateBtn = Button("GATES",30,10,SwitchBarMode)
-IOBtn = Button("I/O",170,10,SwitchBarMode)
-ClearBtn = Button("CLEAR",10,650,Clear)
+#Buttons
+GateBtn = TextButton("GATES",30,10,100,50,17,SwitchBarMode)
+IOBtn = TextButton("I/O",170,10,100,50,17,SwitchBarMode)
+ClearBtn = IconButton(10,650,80,50,clearImg,Clear)
+SaveBtn = IconButton(100,650,80,50,saveImg,Save)
+OpenBtn = IconButton(190,650,80,50,openImg,OpenFile)
+NewBtn = TextButton("NEW",490,300,300,100,50,Clear)
+LoadBtn = TextButton("LOAD",490,450,300,100,50,OpenFile)
 while running:
-    window.fill((104, 109, 118))
     #Getting all events
     for event in pygame.event.get():
         #Checking if window gets closed
@@ -359,13 +442,19 @@ while running:
                             activeConnection1 = connection
             #ON LEFT CLICK
             if event.button == 1:
-                if event.pos[0] > 300:
-                    GetActiveGate1(event.pos)
+                if menu:
+                    NewBtn.clicked()
+                    LoadBtn.clicked()
                 else:
-                    AddSideGate(event.pos)
-                    GateBtn.clicked()
-                    IOBtn.clicked()
-                    ClearBtn.clicked()
+                    if event.pos[0] > 300:
+                        GetActiveGate1(event.pos)
+                    else:
+                        AddSideGate(event.pos)
+                        GateBtn.clicked()
+                        IOBtn.clicked()
+                        ClearBtn.clicked()
+                        SaveBtn.clicked()
+                        OpenBtn.clicked()
             #ON RIGHT CLICK
             if event.button == 3 and activeConnection1 != None:
                 activeConnection1.disconnect(None)
@@ -434,20 +523,29 @@ while running:
                     gates[prevActiveGate].delete()
                     gates.pop(prevActiveGate)
                     prevActiveGate = None
-    #Drawing the gates
-    for gate in gates:
-        gate.draw()
-    #Drawing the side bar
-    pygame.draw.rect(window,(55, 58, 64), (0,0,300,720))  
-    GateBtn.draw()
-    IOBtn.draw()
-    ClearBtn.draw()
-    if sideBarMode == "GATES":
-        for g in sideGates:
-            g.draw()
+    if menu:
+        window.blit(bg,(0,0))
+        DrawText("LOGIC GOAT",120,"black",640,80)
+        NewBtn.draw()
+        LoadBtn.draw()
     else:
-        for g in sideIO:
-            g.draw()
+        window.fill((104, 109, 118))
+        #Drawing the gates
+        for gate in gates:
+            gate.draw()
+        #Drawing the side bar
+        pygame.draw.rect(window,(55, 58, 64), (0,0,300,720))  
+        GateBtn.draw()
+        IOBtn.draw()
+        ClearBtn.draw()
+        SaveBtn.draw()
+        OpenBtn.draw()
+        if sideBarMode == "GATES":
+            for g in sideGates:
+                g.draw()
+        else:
+            for g in sideIO:
+                g.draw()
     pygame.display.update()
     clock.tick(60)
 pygame.quit()
