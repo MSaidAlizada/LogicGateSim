@@ -44,6 +44,8 @@ notImg = pygame.image.load("./images/not.png")
 notImg.convert()
 inputImg =pygame.image.load("./images/input.png")
 inputImg.convert()
+clockImg =pygame.image.load("./images/clock.png")
+clockImg.convert()
 outputImg =pygame.image.load("./images/output.png")
 outputImg.convert()
 
@@ -229,6 +231,14 @@ class InputGate(LogicGate):
         else:
             self.value = 1
         self.sendOutput(self)
+class ClockGate(InputGate):
+    def __init__(self,x,y):
+        InputGate.__init__(self,x,y)
+        self.type = "clock"
+    def draw(self):
+        window.blit(getImg(self.type), self.gateRect)
+        for connection in self.connections:
+            connection.draw()
 #Output class
 class OutputGate(LogicGate):
     def __init__(self,x,y):
@@ -317,6 +327,8 @@ def AddGate(gateType):
             gates.append(NotGate(x,y))
         case "input":
             gates.append(InputGate(x,y))
+        case "clock":
+            gates.append(ClockGate(x,y))
         case "output":
             gates.append(OutputGate(x,y))
 
@@ -400,6 +412,8 @@ def getImg(type):
             return notImg
         case "input":
             return inputImg
+        case "clock":
+            return clockImg
         case "output":
             return outputImg
 
@@ -408,13 +422,14 @@ running = True
 menu = True
 gates = []
 sideGates = [SidebarGates(5,100,andImg,"and"),SidebarGates(160,100,nandImg,"nand"),SidebarGates(5,220,orImg,"or"),SidebarGates(160,220,norImg,"nor"),SidebarGates(5,330,xorImg,"xor"),SidebarGates(160,330,nxorImg,"nxor"),SidebarGates(82.5,440,notImg,"not")]
-sideIO = [SidebarGates(5,100,inputImg,"input"),SidebarGates(160,100,outputImg,"output")]
+sideIO = [SidebarGates(5,100,inputImg,"input"),SidebarGates(160,100,outputImg,"output"), SidebarGates(82.5,220,clockImg,"clock")]
 activeGate = None
 prevActiveGate = None
 motion = False
 activeConnection1 = None
 activeConnection2 = None
 sideBarMode = "GATES"
+timer = 0
 #Buttons
 GateBtn = TextButton("GATES",30,10,100,50,17,SwitchBarMode)
 IOBtn = TextButton("I/O",170,10,100,50,17,SwitchBarMode)
@@ -524,6 +539,13 @@ while running:
         LoadBtn.draw()
     else:
         window.fill((104, 109, 118))
+        #updating clocks
+        timer += 1
+        if (timer % 60 == 0):
+            timer = 0
+            for g in gates:
+                if g.type == "clock":
+                    g.changeValue()
         #Drawing the gates
         for gate in gates:
             gate.draw()
