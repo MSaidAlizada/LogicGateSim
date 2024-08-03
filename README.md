@@ -16,7 +16,7 @@ Gates included are:
  ## Installation
 Logic Goat requires Python 3.10 or above which can be downloaded from [the official Python webpage](https://www.python.org/downloads/).
 Since we are using pygame run the following command to install it: 
-`$ pip install -r requirements.txt`
+`$ pip install pygame`
 
 ## How to use
 
